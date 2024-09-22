@@ -4,7 +4,7 @@ from core.libs import helpers
 
 class User(db.Model):
     __tablename__ = 'users'
-    id = Column(Integer, primary_key=True)
+    id = db.Column(Integer, primary_key=True)
     id = db.Column(db.Integer, db.Sequence('users_id_seq'), primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
