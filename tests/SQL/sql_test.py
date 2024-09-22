@@ -29,13 +29,10 @@ def create_n_graded_assignments_for_teacher(number: int = 0, teacher_id: int = 1
 
 def test_get_assignments_in_graded_state_for_each_student():
     with app.app_context():
-        # Ensure there's a clean state
         db.session.query(Assignment).delete()
         db.session.commit()
 
-        # Create test assignments
-        # You can adjust this to create the necessary assignments for the test
-        for i in range(5):
+        for _ in range(5):
             assignment = Assignment(
                 student_id=1,
                 teacher_id=1,
@@ -44,18 +41,16 @@ def test_get_assignments_in_graded_state_for_each_student():
             db.session.add(assignment)
         db.session.commit()
 
-        expected_result = [(1, 5)]  # Expected number of graded assignments
+        expected_result = [(1, 5)]
 
         with open('tests/SQL/number_of_graded_assignments_for_each_student.sql', encoding='utf8') as fo:
             sql = fo.read()
 
         sql_result = db.session.execute(text(sql)).fetchall()
-        for itr, result in enumerate(expected_result):
-            assert result[0] == sql_result[itr][0]
+        assert expected_result[0][1] == sql_result[0][1]  # Compare the counts directly
 
 def test_get_grade_A_assignments_for_teacher_with_max_grading():
     with app.app_context():
-        # Ensure there's a clean state
         db.session.query(Assignment).delete()
         db.session.commit()
 
