@@ -17,6 +17,8 @@ def h_principal():
 def setup_assignments():
     """Fixture to set up test assignments in the database."""
     with app.app_context():
+        # Clear existing assignments for clean setup
+        db.session.query(Assignment).delete()
         # Create test assignments with known IDs (4 and 5)
         assignment1 = Assignment(id=4, teacher_id=1, student_id=1, grade=GradeEnum.C, state=AssignmentStateEnum.GRADED)
         assignment2 = Assignment(id=5, teacher_id=1, student_id=1, grade=GradeEnum.DRAFT, state=AssignmentStateEnum.DRAFT)
@@ -48,6 +50,7 @@ def test_grade_assignment_draft_assignment(client, h_principal, setup_assignment
     )
 
     assert response.status_code == 400
+    assert response.json['message'] == 'Assignment cannot be graded while in Draft state.'
 
 def test_grade_assignment(client, h_principal, setup_assignments):
     """Test to grade an assignment."""
@@ -78,3 +81,7 @@ def test_regrade_assignment(client, h_principal, setup_assignments):
     assert response.status_code == 200
     assert response.json['data']['state'] == AssignmentStateEnum.GRADED.value
     assert response.json['data']['grade'] == GradeEnum.B.value
+
+# Optionally, include a main block to run tests if needed
+if __name__ == "__main__":
+    pytest.main()
