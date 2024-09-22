@@ -48,3 +48,5 @@ def test_grade_assignment(client, h_principal, setup_assignments):
     assert response.status_code == 200
     assert response.json['data']['state'] == AssignmentStateEnum.GRADED.value
     assert response.json['data']['grade'] == GradeEnum.C.value
+
+# Consider adding tests for edge cases (e.g., invalid assignment ID, invalid grade)
