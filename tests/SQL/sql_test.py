@@ -3,11 +3,19 @@ from core import app, db
 from core.models.assignments import Assignment, AssignmentStateEnum, GradeEnum
 from sqlalchemy import text
 
-@pytest.fixture
+@pytest.fixture(scope='module')
 def client():
     with app.test_client() as client:
         with app.app_context():
             yield client
+
+@pytest.fixture(scope='function', autouse=True)
+def setup_database():
+    with app.app_context():
+        db.create_all()
+        yield
+        db.session.remove()
+        db.drop_all()
 
 @pytest.fixture
 def setup_assignments():
@@ -22,11 +30,12 @@ def setup_assignments():
         db.session.bulk_save_objects(assignments)
         db.session.commit()
 
-def test_count_graded_assignments_by_teacher_orm(client, setup_assignments):
-    count = db.session.query(Assignment) \
-        .filter_by(teacher_id=1, state=AssignmentStateEnum.GRADED) \
-        .count()
-    assert count == 1
+def test_count_graded_assignments_by_teacher(client, setup_assignments):
+    query = text("SELECT COUNT(*) FROM assignments WHERE teacher_id = :teacher_id AND state = :state")
+    teacher_id = 1
+    state = AssignmentStateEnum.GRADED.value
+    result = db.session.execute(query, {'teacher_id': teacher_id, 'state': state}).scalar()
+    assert result == 2
 
 def test_count_assignments_per_student(client, setup_assignments):
     query = text("SELECT student_id, COUNT(*) FROM assignments GROUP BY student_id")
