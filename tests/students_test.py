@@ -2,11 +2,19 @@ import pytest
 from core import app, db
 from core.models.assignments import Assignment, AssignmentStateEnum
 
-@pytest.fixture
+@pytest.fixture(scope='module')
 def client():
     with app.test_client() as client:
         with app.app_context():
             yield client
+
+@pytest.fixture(scope='function', autouse=True)
+def setup_database():
+    with app.app_context():
+        db.create_all()
+        yield
+        db.session.remove()
+        db.drop_all()
 
 @pytest.fixture
 def h_student_1():
@@ -40,7 +48,7 @@ def test_post_assignment_null_content(client, h_student_1):
 def test_post_assignment_student_1(client, h_student_1):
     content = 'ABCD TESTPOST'
     response = client.post('/student/assignments', headers=h_student_1, json={'content': content})
-    assert response.status_code == 201  # Expecting successful creation
+    assert response.status_code == 201
     data = response.json['data']
     assert data['content'] == content
     assert data['state'] == AssignmentStateEnum.DRAFT.value
