@@ -26,16 +26,18 @@ def setup_assignments():
 def test_get_assignments(client, h_principal, setup_assignments):
     response = client.get('/principal/assignments', headers=h_principal)
     assert response.status_code == 200
-    data = response.json['data']
+    data = response.json.get('data', [])
     assert len(data) > 0
+    assert all(item['state'] == AssignmentStateEnum.GRADED.value for item in data if item['grade'] != GradeEnum.DRAFT.value)
 
-def test_grade_assignment_draft_assignment(client, h_principal, setup_assignments):
+def test_grade_draft_assignment(client, h_principal, setup_assignments):
     response = client.post(
         '/principal/assignments/grade',
         json={'id': 5, 'grade': GradeEnum.A.value},
         headers=h_principal
     )
     assert response.status_code == 400
+    assert response.json['message'] == "Cannot grade a draft assignment"
 
 def test_grade_assignment(client, h_principal, setup_assignments):
     response = client.post(
@@ -56,3 +58,21 @@ def test_regrade_assignment(client, h_principal, setup_assignments):
     assert response.status_code == 200
     assert response.json['data']['state'] == AssignmentStateEnum.GRADED.value
     assert response.json['data']['grade'] == GradeEnum.B.value
+
+def test_grade_assignment_invalid_id(client, h_principal, setup_assignments):
+    response = client.post(
+        '/principal/assignments/grade',
+        json={'id': 999, 'grade': GradeEnum.A.value},  # Non-existent ID
+        headers=h_principal
+    )
+    assert response.status_code == 404
+    assert response.json['message'] == "Assignment not found"
+
+def test_grade_assignment_invalid_grade(client, h_principal, setup_assignments):
+    response = client.post(
+        '/principal/assignments/grade',
+        json={'id': 4, 'grade': 'INVALID_GRADE'},  # Invalid grade value
+        headers=h_principal
+    )
+    assert response.status_code == 400
+    assert response.json['message'] == "Invalid grade value"
