@@ -2,11 +2,19 @@ import pytest
 from core import app, db
 from core.models.assignments import Assignment, AssignmentStateEnum
 
-@pytest.fixture
+@pytest.fixture(scope='module')
 def client():
     with app.test_client() as client:
         with app.app_context():
             yield client
+
+@pytest.fixture(scope='function', autouse=True)
+def setup_database():
+    with app.app_context():
+        db.create_all()
+        yield
+        db.session.remove()
+        db.drop_all()
 
 @pytest.fixture
 def h_teacher_1():
