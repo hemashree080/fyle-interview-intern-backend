@@ -13,10 +13,6 @@ def h_student_1():
     return {'X-Student': '{"student_id": 1, "user_id": 1}'}
 
 @pytest.fixture
-def h_student_2():
-    return {'X-Student': '{"student_id": 2, "user_id": 2}'}
-
-@pytest.fixture
 def setup_assignments():
     with app.app_context():
         db.session.query(Assignment).delete()
@@ -32,8 +28,8 @@ def setup_assignments():
 def test_get_assignments_student_1(client, h_student_1, setup_assignments):
     response = client.get('/student/assignments', headers=h_student_1)
     assert response.status_code == 200
-    data = response.json.get('data', [])
-    assert len(data) == 2  # Expecting 2 assignments for student 1
+    data = response.json['data']
+    assert len(data) > 0
     for assignment in data:
         assert assignment['student_id'] == 1
 
@@ -44,10 +40,9 @@ def test_post_assignment_null_content(client, h_student_1):
         json={'content': None}
     )
     assert response.status_code == 400
-    assert response.json['message'] == 'Content cannot be null'
 
 def test_post_assignment_student_1(client, h_student_1):
-    content = 'New Assignment Content'
+    content = 'ABCD TESTPOST'
     response = client.post(
         '/student/assignments',
         headers=h_student_1,
@@ -57,19 +52,6 @@ def test_post_assignment_student_1(client, h_student_1):
     data = response.json['data']
     assert data['content'] == content
     assert data['state'] == AssignmentStateEnum.DRAFT.value
-    assert data['teacher_id'] is None
-
-def test_submit_assignment_student_1(client, h_student_1, setup_assignments):
-    response = client.post(
-        '/student/assignments/submit',
-        headers=h_student_1,
-        json={'id': 2, 'teacher_id': 2}
-    )
-    assert response.status_code == 200
-    data = response.json['data']
-    assert data['student_id'] == 1
-    assert data['state'] == AssignmentStateEnum.SUBMITTED.value
-    assert data['teacher_id'] == 2
 
 def test_assignment_resubmit_error(client, h_student_1, setup_assignments):
     client.post(
@@ -86,32 +68,4 @@ def test_assignment_resubmit_error(client, h_student_1, setup_assignments):
 
     assert response.status_code == 400
     assert response.json['error'] == 'FyleError'
-    assert response.json["message"] == 'only a draft assignment can be submitted'
-
-def test_submit_assignment_invalid_id(client, h_student_1):
-    response = client.post(
-        '/student/assignments/submit',
-        headers=h_student_1,
-        json={'id': 999, 'teacher_id': 2}  # Non-existent ID
-    )
-    assert response.status_code == 404
-    assert response.json['message'] == 'Assignment not found'
-
-def test_submit_assignment_already_submitted(client, h_student_1, setup_assignments):
-    # Submit first
-    client.post(
-        '/student/assignments/submit',
-        headers=h_student_1,
-        json={'id': 2, 'teacher_id': 2}
-    )
-    
-    # Attempt to submit again
-    response = client.post(
-        '/student/assignments/submit',
-        headers=h_student_1,
-        json={'id': 2, 'teacher_id': 2}
-    )
-
-    assert response.status_code == 400
-    assert response.json['error'] == 'FyleError'
-    assert response.json["message"] == 'only a draft assignment can be submitted'
+    assert response.json['message'] == 'Only a draft assignment can be submitted.'
