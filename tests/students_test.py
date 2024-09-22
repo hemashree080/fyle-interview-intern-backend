@@ -66,4 +66,5 @@ def test_assignment_resubmit_error(client, h_student_1, setup_assignments):
     client.post('/student/assignments/submit', headers=h_student_1, json={'id': 2, 'teacher_id': 2})
     response = client.post('/student/assignments/submit', headers=h_student_1, json={'id': 2, 'teacher_id': 2})
     assert response.status_code == 400
-    assert response.json['error'] == 'AssignmentAlreadySubmittedError'  # Use a more specific error message
+    assert response.json['error'] == 'FyleError'
+    assert response.json["message"] == 'only a draft assignment can be submitted'
